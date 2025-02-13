@@ -1,6 +1,6 @@
 import os
 import uuid
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
@@ -10,9 +10,7 @@ from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, PasswordField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Email, EqualTo
 from PIL import Image
-from flask import jsonify  # 📢 Import pour renvoyer du JSON
-
-
+from flask_migrate import Migrate
 
 app = Flask(__name__)
 
@@ -23,6 +21,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["UPLOAD_FOLDER"] = "static/uploads"
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 # Création du dossier d'upload s'il n'existe pas
 if not os.path.exists(app.config["UPLOAD_FOLDER"]):
@@ -46,8 +45,34 @@ class Recette(db.Model):
     nom = db.Column(db.String(100), nullable=False)
     ingredients = db.Column(db.Text, nullable=False)
     instructions = db.Column(db.Text, nullable=False)
-    image = db.Column(db.String(100), nullable=True)  # 📸 Ajout du champ image
+    image = db.Column(db.String(100), nullable=True)
+    publique = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+# Modèle Notation
+class Notation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    note = db.Column(db.Integer, nullable=False)  # Note entre 1 et 5
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recette_id = db.Column(db.Integer, db.ForeignKey('recette.id'), nullable=False)
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recette_id = db.Column(db.Integer, db.ForeignKey('recette.id'), nullable=False)
+
+    user = db.relationship('User', backref=db.backref('messages', lazy=True))
+    recette = db.relationship('Recette', backref=db.backref('messages', lazy=True))
+
+
+# Calcul de la note moyenne d'une recette
+def get_average_rating(recette_id):
+    notes = Notation.query.filter_by(recette_id=recette_id).all()
+    if notes:
+        return sum(note.note for note in notes) / len(notes)
+    return 0  # Pas encore de note
 
 # Formulaire d'inscription
 class RegisterForm(FlaskForm):
@@ -71,14 +96,14 @@ class RecetteForm(FlaskForm):
     image = FileField("Image de la recette", validators=[FileAllowed(['jpg', 'png', 'jpeg'], "Images uniquement!")])
     submit = SubmitField("Ajouter la recette")
 
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    recettes_publiques = Recette.query.filter_by(publique=True).all()
+    return render_template("index.html", recettes=recettes_publiques)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -117,34 +142,28 @@ def logout():
 def ajouter_recette():
     form = RecetteForm()
     if form.validate_on_submit():
-        # Gérer l'upload de l'image
         image_file = form.image.data
         filename = None
 
         if image_file:
-            # Générer un nom de fichier unique pour éviter les conflits
             ext = image_file.filename.rsplit('.', 1)[1].lower()
             filename = f"{uuid.uuid4()}.{ext}"
             filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             image_file.save(filepath)
 
-            # Redimensionner l'image
             img = Image.open(filepath)
-            img.thumbnail((500, 500))  # ✅ Réduire la taille pour éviter les fichiers trop lourds
+            img.thumbnail((500, 500))
             img.save(filepath)
 
         nouvelle_recette = Recette(
             nom=form.nom.data,
             ingredients=form.ingredients.data,
             instructions=form.instructions.data,
-            image=filename, 
+            image=filename,
             user_id=current_user.id
         )
         db.session.add(nouvelle_recette)
         db.session.commit()
-
-        print(f"Nouvelle recette ajoutée : ID={nouvelle_recette.id}, Nom={nouvelle_recette.nom}, Image={nouvelle_recette.image}")  # ✅ Debugging
-
         return redirect(url_for("afficher_recettes"))
 
     return render_template("ajouter_recette.html", form=form)
@@ -153,22 +172,48 @@ def ajouter_recette():
 @login_required
 def afficher_recettes():
     recettes = Recette.query.filter_by(user_id=current_user.id).all()
-    print(f"Recettes récupérées : {[recette.id for recette in recettes]}")  # ✅ Debugging
     return render_template("recettes.html", recettes=recettes)
 
-# ✅ Ajout de la route `afficher_recette` pour éviter les erreurs Flask
+
 @app.route("/recette/<int:id>")
 @login_required
 def afficher_recette(id):
     recette = Recette.query.get_or_404(id)
-    return render_template("recette.html", recette=recette)
+    moyenne_notes = get_average_rating(id)
+    return render_template("recette.html", recette=recette, moyenne_notes=moyenne_notes)
+
+@app.route("/recette/<int:id>/message", methods=["POST"])
+@login_required
+def ajouter_message(id):
+    recette = Recette.query.get_or_404(id)
+    content = request.form["content"]
+
+    if content:
+        message = Message(content=content, user_id=current_user.id, recette_id=id)
+        db.session.add(message)
+        db.session.commit()
+        flash("Message ajouté !", "success")
+
+    return redirect(url_for("afficher_recette", id=id))
+
+
+@app.route("/publier/<int:id>", methods=["POST"])
+@login_required
+def publier_recette(id):
+    recette = Recette.query.get_or_404(id)
+    if recette.user_id != current_user.id:
+        flash("Vous ne pouvez publier que vos propres recettes.", "danger")
+        return redirect(url_for("home"))
+
+    recette.publique = True
+    db.session.commit()
+    flash("Recette publiée avec succès !", "success")
+    return redirect(url_for("afficher_recette", id=id))
 
 @app.route("/modifier/<int:id>", methods=["GET", "POST"])
 @login_required
 def modifier_recette(id):
     recette = Recette.query.get_or_404(id)
-
-    # Vérifier si l'utilisateur est bien le propriétaire de la recette
     if recette.user_id != current_user.id:
         flash("Vous ne pouvez modifier que vos propres recettes.", "danger")
         return redirect(url_for("afficher_recettes"))
@@ -182,6 +227,7 @@ def modifier_recette(id):
         return redirect(url_for("afficher_recettes"))
 
     return render_template("modifier_recette.html", recette=recette)
+
 
 @app.route("/supprimer/<int:id>", methods=["POST"])
 @login_required
@@ -204,6 +250,21 @@ def supprimer_recette(id):
     flash("Recette supprimée avec succès.", "success")
     return redirect(url_for("afficher_recettes"))
 
+
+@app.route("/recette/<int:id>/noter", methods=["POST"])
+@login_required
+def noter_recette(id):
+    recette = Recette.query.get_or_404(id)
+    note = int(request.form["note"])
+    if 1 <= note <= 5:
+        nouvelle_note = Notation(note=note, user_id=current_user.id, recette_id=id)
+        db.session.add(nouvelle_note)
+        db.session.commit()
+        flash("Votre note a été enregistrée !", "success")
+    else:
+        flash("Note invalide. Veuillez entrer une note entre 1 et 5.", "danger")
+
+    return redirect(url_for("afficher_recette", id=id))
 
 if __name__ == "__main__":
     with app.app_context():

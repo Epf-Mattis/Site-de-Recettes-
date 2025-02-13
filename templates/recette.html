@@ -3,30 +3,83 @@
 {% block title %}{{ recette.nom }}{% endblock %}
 
 {% block content %}
-    <div class="recette-container">
-        <h2>{{ recette.nom }}</h2>
-        
-        {% if recette.image %}
-            <img src="{{ url_for('static', filename='uploads/' + recette.image) }}" alt="{{ recette.nom }}" class="recette-image">
+<div class="recette-container">
+    <h2>{{ recette.nom }}</h2>
+    <a href="{{ url_for('afficher_recettes') }}" class="ajouter-recette-fixed">⬅️ Retour aux recettes</a>
+    {% if recette.image %}
+        <img src="{{ url_for('static', filename='uploads/' + recette.image) }}" alt="{{ recette.nom }}">
+    {% endif %}
+
+    <p><strong>Ingrédients :</strong> {{ recette.ingredients }}</p>
+    <p><strong>Instructions :</strong> {{ recette.instructions }}</p>
+
+    <h3 class="note-stars">Note Moyenne : 
+        {% if moyenne_notes > 0 %}
+            {% for i in range(5) %}
+                {% if i < moyenne_notes %}
+                    ⭐
+                {% else %}
+                    ☆
+                {% endif %}
+            {% endfor %}
+            ({{ moyenne_notes|round(1) }}/5)
+        {% else %}
+            Pas encore noté
         {% endif %}
+    </h3>
 
-        <div class="recette-details">
-            <p><strong>Ingrédients :</strong> {{ recette.ingredients }}</p>
-            <p><strong>Instructions :</strong> {{ recette.instructions }}</p>
-        </div>
-
+    <div class="recette-buttons">
         {% if current_user.is_authenticated and recette.user_id == current_user.id %}
-            <div class="recette-buttons">
-                <a href="{{ url_for('modifier_recette', id=recette.id) }}">✏️ Modifier</a>
+            <a href="{{ url_for('modifier_recette', id=recette.id) }}" class="btn btn-primary">✏️ Modifier</a>
 
-                <form action="{{ url_for('supprimer_recette', id=recette.id) }}" method="POST">
-                    <button type="submit" onclick="return confirm('Voulez-vous vraiment supprimer cette recette ?');">🗑️ Supprimer</button>
+            <form action="{{ url_for('supprimer_recette', id=recette.id) }}" method="POST" style="display: inline;">
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Voulez-vous vraiment supprimer cette recette ?');">🗑️ Supprimer</button>
+            </form>
+
+            <form action="{{ url_for('publier_recette', id=recette.id) }}" method="POST" style="display: inline;">
+                <button type="submit" class="btn btn-success">📢 Publier</button>
+            </form>
+        {% else %}
+            <div class="note-form">
+                <h4>Noter cette recette :</h4>
+                <form action="{{ url_for('noter_recette', id=recette.id) }}" method="POST">
+                    <label for="note">Note (1 à 5) :</label>
+                    <select name="note" required>
+                        <option value="1">⭐</option>
+                        <option value="2">⭐⭐</option>
+                        <option value="3">⭐⭐⭐</option>
+                        <option value="4">⭐⭐⭐⭐</option>
+                        <option value="5">⭐⭐⭐⭐⭐</option>
+                    </select>
+                    <button type="submit">Envoyer</button>
                 </form>
             </div>
-        {% else %}
-            <p><i>Vous ne pouvez pas modifier ou supprimer cette recette.</i></p>
         {% endif %}
-
-        <a href="{{ url_for('afficher_recettes') }}" class="back-link">⬅️ Retour aux recettes</a>
     </div>
+</div>
+
+<!-- 🔥💬 CHAT SYSTEM 🔥 -->
+<div class="chat-container">
+    <h3>💬 Chat</h3>
+
+    <!-- Formulaire pour envoyer un message -->
+    <form action="{{ url_for('ajouter_message', id=recette.id) }}" method="POST" class="chat-form">
+        <textarea name="content" rows="3" placeholder="Écrire un message..." required></textarea>
+        <button type="submit">Envoyer</button>
+    </form>
+
+    <!-- Affichage des messages -->
+    <ul class="message-list">
+        {% for message in recette.messages %}
+            <li>
+                <strong>{{ message.user.username }} :</strong> {{ message.content }}
+                <small>({{ message.timestamp.strftime('%d/%m/%Y %H:%M') }})</small>
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+
+<!-- Bouton de retour amélioré -->
+
+
 {% endblock %}

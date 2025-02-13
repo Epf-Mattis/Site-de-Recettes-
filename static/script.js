@@ -19,3 +19,4 @@ function filtrerRecettes() {
         recette.style.display = texte.includes(recherche) ? "block" : "none";
     });
 }
+
