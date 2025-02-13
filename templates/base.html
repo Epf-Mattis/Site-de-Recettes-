@@ -12,6 +12,13 @@
         <nav>
             <a href="{{ url_for('home') }}">Accueil</a>
             <a href="{{ url_for('afficher_recettes') }}">Recettes</a>
+            {% if current_user.is_authenticated %}
+    <a href="{{ url_for('logout') }}">Se déconnecter</a>
+{% else %}
+    <a href="{{ url_for('login') }}">Se connecter</a>
+    <a href="{{ url_for('register') }}">S'inscrire</a>
+{% endif %}
+
 
         </nav>
     </header>
