@@ -71,21 +71,6 @@ class RecetteForm(FlaskForm):
     image = FileField("Image de la recette", validators=[FileAllowed(['jpg', 'png', 'jpeg'], "Images uniquement!")])
     submit = SubmitField("Ajouter la recette")
 
-@app.route("/api/recettes", methods=["GET"])
-def api_recettes():
-    recettes = Recette.query.all()  # Récupère toutes les recettes
-    recettes_json = [
-        {
-            "id": recette.id,
-            "nom": recette.nom,
-            "ingredients": recette.ingredients,
-            "instructions": recette.instructions,
-            "image_url": url_for('static', filename=f"uploads/{recette.image}") if recette.image else None,
-            "user_id": recette.user_id
-        }
-        for recette in recettes
-    ]
-    return jsonify({"recettes": recettes_json})
 
 @login_manager.user_loader
 def load_user(user_id):
