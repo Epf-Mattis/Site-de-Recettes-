@@ -3,3 +3,5 @@ Flask-SQLAlchemy
 Flask-Login
 Flask-WTF
 email-validator
+Flask-Uploads
+Pillow

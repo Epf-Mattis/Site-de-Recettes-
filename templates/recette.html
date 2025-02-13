@@ -1,20 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}{{ recette.nom }}{% endblock %}
+{% block title %}Mes Recettes{% endblock %}
 
 {% block content %}
-    <h2>{{ recette.nom }}</h2>
-    <p><strong>Ingrédients :</strong> {{ recette.ingredients }}</p>
-    <p><strong>Instructions :</strong> {{ recette.instructions }}</p>
-    <p>Debug ID: {{ recette.id }}</p>
+    <h2>Mes Recettes</h2>
+    <ul>
+        {% for recette in recettes %}
+            <li>
+                <a href="{{ url_for('afficher_recette', id=recette.id) }}">{{ recette.nom }}</a>
+                {% if recette.image %}
+                    <br><img src="{{ url_for('static', filename='uploads/' + recette.image) }}" alt="Image de {{ recette.nom }}" width="200">
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
 
-    <a href="{{ url_for('modifier_recette', id=recette.id) }}">✏️ Modifier</a>
-
-    
-    <form action="{{ url_for('supprimer_recette', id=recette.id) }}" method="POST" style="display: inline;">
-        <button type="submit" onclick="return confirm('Voulez-vous vraiment supprimer cette recette ?');">🗑️ Supprimer</button>
-    </form>
-
-    <br><br>
-    <a href="{{ url_for('afficher_recettes') }}">⬅️ Retour aux recettes</a>
+    <a href="{{ url_for('ajouter_recette') }}">➕ Ajouter une recette</a>
 {% endblock %}

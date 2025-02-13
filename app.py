@@ -49,7 +49,11 @@ class LoginForm(FlaskForm):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Routes
+# 🚀 Correction de la route Home
+@app.route("/")
+def home():
+    return render_template("index.html")
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     form = RegisterForm()
@@ -96,31 +100,50 @@ def ajouter_recette():
             return redirect(url_for("afficher_recettes"))
     return render_template("ajouter_recette.html")
 
+@app.route("/recettes")
+@login_required  # ✅ Uniquement pour les utilisateurs connectés
+def afficher_recettes():
+    recettes = Recette.query.filter_by(user_id=current_user.id).all()  # ✅ Filtrer par user_id
+    return render_template("recettes.html", recettes=recettes)
+
+
+@app.route("/recette/<int:id>")
+def afficher_recette(id):
+    recette = Recette.query.get_or_404(id)
+    return render_template("recette.html", recette=recette)
+
 @app.route("/modifier/<int:id>", methods=["GET", "POST"])
 @login_required
 def modifier_recette(id):
     recette = Recette.query.get_or_404(id)
-    if recette.user_id != current_user.id:
+
+    if recette.user_id != current_user.id:  # ✅ Vérification du propriétaire
         flash("Vous ne pouvez modifier que vos propres recettes.", "danger")
         return redirect(url_for("afficher_recettes"))
+
     if request.method == "POST":
         recette.nom = request.form["nom"]
         recette.ingredients = request.form["ingredients"]
         recette.instructions = request.form["instructions"]
         db.session.commit()
         return redirect(url_for("afficher_recettes"))
+
     return render_template("modifier_recette.html", recette=recette)
+
 
 @app.route("/supprimer/<int:id>", methods=["POST"])
 @login_required
 def supprimer_recette(id):
     recette = Recette.query.get_or_404(id)
-    if recette.user_id != current_user.id:
+
+    if recette.user_id != current_user.id:  # ✅ Vérification du propriétaire
         flash("Vous ne pouvez supprimer que vos propres recettes.", "danger")
         return redirect(url_for("afficher_recettes"))
+
     db.session.delete(recette)
     db.session.commit()
     return redirect(url_for("afficher_recettes"))
+
 
 if __name__ == "__main__":
     with app.app_context():
