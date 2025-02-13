@@ -4,16 +4,23 @@
 
 {% block content %}
     <h2>Ajouter une Nouvelle Recette</h2>
-    <form action="{{ url_for('ajouter_recette') }}" method="POST" onsubmit="return validerFormulaire()">
+    <form action="{{ url_for('ajouter_recette') }}" method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
         <label for="nom">Nom de la recette :</label>
-        <input type="text" id="nom" name="nom" required>
+        {{ form.nom() }} <br>
 
         <label for="ingredients">Ingrédients :</label>
-        <textarea id="ingredients" name="ingredients" required></textarea>
+        {{ form.ingredients() }} <br>
 
         <label for="instructions">Instructions :</label>
-        <textarea id="instructions" name="instructions" required></textarea>
+        {{ form.instructions() }} <br>
 
-        <button type="submit">Ajouter</button>
+        <label for="image">Image :</label>
+        {{ form.image() }} <br>
+
+        {{ form.submit() }}
     </form>
+
+    <a href="{{ url_for('afficher_recettes') }}">⬅️ Retour aux recettes</a>
 {% endblock %}

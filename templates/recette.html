@@ -1,19 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}Mes Recettes{% endblock %}
+{% block title %}{{ recette.nom if recette else "Recette introuvable" }}{% endblock %}
 
 {% block content %}
-    <h2>Mes Recettes</h2>
-    <ul>
-        {% for recette in recettes %}
-            <li>
-                <a href="{{ url_for('afficher_recette', id=recette.id) }}">{{ recette.nom }}</a>
-                {% if recette.image %}
-                    <br><img src="{{ url_for('static', filename='uploads/' + recette.image) }}" alt="Image de {{ recette.nom }}" width="200">
-                {% endif %}
-            </li>
-        {% endfor %}
-    </ul>
+    {% if recette %}
+        <h2>{{ recette.nom }}</h2>
+        <p><strong>Ingrédients :</strong> {{ recette.ingredients }}</p>
+        <p><strong>Instructions :</strong> {{ recette.instructions }}</p>
+        <p>Debug ID: {{ recette.id }}</p>
 
-    <a href="{{ url_for('ajouter_recette') }}">➕ Ajouter une recette</a>
+        {% if recette.id %}
+            <a href="{{ url_for('modifier_recette', id=recette.id) }}">✏️ Modifier</a>
+
+            <form action="{{ url_for('supprimer_recette', id=recette.id) }}" method="POST" style="display: inline;">
+                <button type="submit" onclick="return confirm('Voulez-vous vraiment supprimer cette recette ?');">🗑️ Supprimer</button>
+            </form>
+        {% else %}
+            <p><i>Erreur : L'ID de la recette est invalide.</i></p>
+        {% endif %}
+    {% else %}
+        <p><i>Recette introuvable.</i></p>
+    {% endif %}
+
+    <br><br>
+    <a href="{{ url_for('afficher_recettes') }}">⬅️ Retour aux recettes</a>
 {% endblock %}
