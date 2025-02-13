@@ -1,6 +1,6 @@
-__pycache__/
-*.pyc
-*.pyo
-instance/
-.env
-venv/
+Flask-Login
+Flask-WTF
+email-validator
+Flask-Uploads
+Pillow
+.vercel
