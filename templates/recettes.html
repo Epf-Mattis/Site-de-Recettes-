@@ -4,6 +4,8 @@
 
 {% block content %}
     <h2>Mes Recettes</h2>
+    <a href="{{ url_for('ajouter_recette') }}" class="ajouter-recette-fixed">➕ Ajouter</a>
+
     <ul>
         {% for recette in recettes %}
             <li>
@@ -15,5 +17,4 @@
         {% endfor %}
     </ul>
 
-    <a href="{{ url_for('ajouter_recette') }}">➕ Ajouter une recette</a>
 {% endblock %}

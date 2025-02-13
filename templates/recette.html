@@ -1,27 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}{{ recette.nom if recette else "Recette introuvable" }}{% endblock %}
+{% block title %}{{ recette.nom }}{% endblock %}
 
 {% block content %}
-    {% if recette %}
+    <div class="recette-container">
         <h2>{{ recette.nom }}</h2>
-        <p><strong>Ingrédients :</strong> {{ recette.ingredients }}</p>
-        <p><strong>Instructions :</strong> {{ recette.instructions }}</p>
-        <p>Debug ID: {{ recette.id }}</p>
-
-        {% if recette.id %}
-            <a href="{{ url_for('modifier_recette', id=recette.id) }}">✏️ Modifier</a>
-
-            <form action="{{ url_for('supprimer_recette', id=recette.id) }}" method="POST" style="display: inline;">
-                <button type="submit" onclick="return confirm('Voulez-vous vraiment supprimer cette recette ?');">🗑️ Supprimer</button>
-            </form>
-        {% else %}
-            <p><i>Erreur : L'ID de la recette est invalide.</i></p>
+        
+        {% if recette.image %}
+            <img src="{{ url_for('static', filename='uploads/' + recette.image) }}" alt="{{ recette.nom }}" class="recette-image">
         {% endif %}
-    {% else %}
-        <p><i>Recette introuvable.</i></p>
-    {% endif %}
 
-    <br><br>
-    <a href="{{ url_for('afficher_recettes') }}">⬅️ Retour aux recettes</a>
+        <div class="recette-details">
+            <p><strong>Ingrédients :</strong> {{ recette.ingredients }}</p>
+            <p><strong>Instructions :</strong> {{ recette.instructions }}</p>
+        </div>
+
+        {% if current_user.is_authenticated and recette.user_id == current_user.id %}
+            <div class="recette-buttons">
+                <a href="{{ url_for('modifier_recette', id=recette.id) }}">✏️ Modifier</a>
+
+                <form action="{{ url_for('supprimer_recette', id=recette.id) }}" method="POST">
+                    <button type="submit" onclick="return confirm('Voulez-vous vraiment supprimer cette recette ?');">🗑️ Supprimer</button>
+                </form>
+            </div>
+        {% else %}
+            <p><i>Vous ne pouvez pas modifier ou supprimer cette recette.</i></p>
+        {% endif %}
+
+        <a href="{{ url_for('afficher_recettes') }}" class="back-link">⬅️ Retour aux recettes</a>
+    </div>
 {% endblock %}
