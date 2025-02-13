@@ -11,9 +11,10 @@ from wtforms import StringField, PasswordField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Email, EqualTo
 from PIL import Image
 from flask_migrate import Migrate
+from flask_cors import CORS
 
 app = Flask(__name__)
-
+CORS(app)
 # Configuration de Flask et base de données
 app.config["SECRET_KEY"] = "supersecretkey"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///recettes.db"
@@ -267,6 +268,5 @@ def noter_recette(id):
     return redirect(url_for("afficher_recette", id=id))
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
