@@ -3,6 +3,15 @@
 {% block title %}Accueil{% endblock %}
 
 {% block content %}
-    <h2>Bienvenue sur le site de recettes !</h2>
-    <p>Découvrez et partagez vos meilleures recettes.</p>
+<h2>Recettes populaires</h2>
+<div class="recettes-container">
+    {% for recette in recettes %}
+        <div class="recette-card">
+            <img src="{{ url_for('static', filename='uploads/' + recette.image) }}" alt="{{ recette.nom }}">
+            <h3>{{ recette.nom }}</h3>
+            <a href="{{ url_for('afficher_recette', id=recette.id) }}">Voir la recette</a>
+        </div>
+    {% endfor %}
+</div>
+
 {% endblock %}
