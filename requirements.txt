@@ -5,3 +5,4 @@ Flask-WTF
 email-validator
 Flask-Uploads
 Pillow
+gunicorn
