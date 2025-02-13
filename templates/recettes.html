@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Nos Recettes{% endblock %}
+
+{% block content %}
+    <h2>Nos Recettes</h2>
+
+    <input type="text" id="search" placeholder="Rechercher une recette..." onkeyup="filtrerRecettes()">
+
+    <ul id="recette-list">
+        {% for recette in recettes %}
+            <li><a href="{{ url_for('afficher_recette', id=recette.id) }}">{{ recette.nom }}</a></li>
+        {% endfor %}
+    </ul>
+
+    <a href="{{ url_for('ajouter_recette') }}">➕ Ajouter une recette</a>
+{% endblock %}
