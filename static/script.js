@@ -9,6 +9,7 @@ function validerFormulaire() {
     }
     return true;
 }
+
 function filtrerRecettes() {
     let recherche = document.getElementById("search").value.toLowerCase();
     let recettes = document.querySelectorAll("#recette-list li");
